@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        #reader {
+            width: 400px;
+            height: 400px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: green;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Code Scanner</h1>
+    <div id="reader"></div>
+    <div class="result" id="result">Scan result will appear here</div>
+    <div class="button-container">
+        <button id="restart">Restart Scan</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const html5QrCode = new Html5Qrcode("reader");
+            const resultElement = document.getElementById("result");
+            const restartButton = document.getElementById("restart");
+
+            // กำหนดสถานะของการสแกน
+            let isScanning = true;
+
+            const qrCodeSuccessCallback = (decodedText) => {
+                if (isScanning) {
+                    // หยุดการสแกนชั่วคราว
+                    isScanning = false;
+                    html5QrCode.stop().then(() => {
+                        // แสดงผลลัพธ์ที่สแกนได้
+                        resultElement.textContent = `Scanned Result: ${decodedText}`;
+
+                        // คุณสามารถใส่โค้ดประมวลผลผลลัพธ์ตรงนี้
+                        console.log("Processing result:", decodedText);
+                    }).catch(err => {
+                        console.error("Error stopping scanner:", err);
+                    });
+                }
+            };
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 300, height: 300 }
+            };
+
+            // เริ่มการสแกน
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                qrCodeSuccessCallback
+            ).catch(err => {
+                console.error("Error starting the scanner:", err);
+            });
+
+            // กดปุ่มเพื่อเริ่มสแกนใหม่
+            restartButton.addEventListener("click", () => {
+                isScanning = true; // ตั้งสถานะเป็นสแกนอีกครั้ง
+                resultElement.textContent = "Scan result will appear here";
+
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    qrCodeSuccessCallback
+                ).catch(err => {
+                    console.error("Error restarting the scanner:", err);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
