@@ -27,6 +27,20 @@
             color: red;
             margin-top: 10px;
         }
+        #restart-btn {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #restart-btn:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -38,6 +52,8 @@
     <!-- ข้อความแจ้งเตือน -->
     <div id="loading">Processing...</div>
     <div id="error-message"></div>
+
+    <button id="restart-btn" onclick="restartScanner()">Start Again</button>
 
     <script>
         let html5QrcodeScanner; // ตัวแปรสำหรับควบคุมการสแกน
@@ -72,6 +88,7 @@
             console.log(`QR Code Scanned: ${decodedText}`);
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
+            const restartBtn = document.getElementById('restart-btn');
 
             // แสดงข้อความกำลังประมวลผล
             loading.style.display = 'block';
@@ -88,6 +105,7 @@
                 errorMessage.textContent = 'Failed to send data to API. Please try again.';
             } finally {
                 loading.style.display = 'none';
+                restartBtn.style.display = 'inline-block'; // แสดงปุ่มเริ่มใหม่
             }
         }
 
@@ -100,18 +118,36 @@
             errorDiv.textContent = `Error: ${errorMessage}`;
         }
 
-        // เริ่มต้น HTML5 QR Code Scanner
-        const screenWidth = window.innerWidth;
-        const qrboxSize = screenWidth < 600 ? 200 : 250; // ขนาด QR Box สำหรับมือถือและจอใหญ่
+        // ฟังก์ชันเริ่มต้น HTML5 QR Code Scanner
+        function startScanner() {
+            const screenWidth = window.innerWidth;
+            const qrboxSize = screenWidth < 600 ? 200 : 250; // ขนาด QR Box สำหรับมือถือและจอใหญ่
 
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", {
-                fps: 10,
-                qrbox: { width: qrboxSize, height: qrboxSize }
-            }
-        );
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", {
+                    fps: 10,
+                    qrbox: { width: qrboxSize, height: qrboxSize }
+                }
+            );
 
-        html5QrcodeScanner.render(onScanSuccess, onScanError);
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        }
+
+        // ฟังก์ชันสำหรับเริ่มต้นใหม่
+        function restartScanner() {
+            const restartBtn = document.getElementById('restart-btn');
+            const errorMessage = document.getElementById('error-message');
+
+            // ซ่อนปุ่มเริ่มใหม่และข้อความข้อผิดพลาด
+            restartBtn.style.display = 'none';
+            errorMessage.textContent = '';
+
+            // เรียกเริ่มต้นการสแกนใหม่
+            startScanner();
+        }
+
+        // เริ่มต้นการสแกนครั้งแรก
+        startScanner();
     </script>
 </body>
 </html>
