@@ -85,7 +85,7 @@
                 const cameras = await Html5Qrcode.getCameras();
 
                 // เลือกกล้องหลังโดยการค้นหาคำว่า "back" ใน label
-                const backCamera = cameras.find(camera => camera.label.toLowerCase().includes('back'));
+                const backCamera = cameras.find(camera => camera.label.toLowerCase().includes('environment'));
 
                 if (!backCamera) {
                     alert("No back camera found.");
