@@ -40,6 +40,8 @@
     <div id="error-message"></div>
 
     <script>
+        let html5QrcodeScanner; // ตัวแปรสำหรับควบคุมการสแกน
+
         // ฟังก์ชันสำหรับส่งข้อมูลไปยัง API
         async function sendQrData(decodedText) {
             const url = 'https://your-cloud-run-url/submit_qr_data';
@@ -75,6 +77,9 @@
             loading.style.display = 'block';
             errorMessage.textContent = '';
 
+            // หยุดการสแกน
+            html5QrcodeScanner.clear();
+
             try {
                 const data = await sendQrData(decodedText);
                 alert(`Data sent to API: ${JSON.stringify(data)}`);
@@ -99,7 +104,7 @@
         const screenWidth = window.innerWidth;
         const qrboxSize = screenWidth < 600 ? 200 : 250; // ขนาด QR Box สำหรับมือถือและจอใหญ่
 
-        const html5QrcodeScanner = new Html5QrcodeScanner(
+        html5QrcodeScanner = new Html5QrcodeScanner(
             "reader", {
                 fps: 10,
                 qrbox: { width: qrboxSize, height: qrboxSize }
