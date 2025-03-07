@@ -41,6 +41,9 @@
         #restart-btn:hover {
             background-color: #45a049;
         }
+        #camera-select {
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -49,15 +52,19 @@
     <!-- กรอบสำหรับแสดงการสแกน QR Code -->
     <div id="reader"></div>
 
+    <!-- เลือกกล้อง -->
+    <select id="camera-select"></select>
+
     <!-- ข้อความแจ้งเตือน -->
     <div id="loading">Processing...</div>
     <div id="error-message"></div>
 
+    <!-- ปุ่มเริ่มใหม่ -->
     <button id="restart-btn" onclick="restartScanner()">Start Again</button>
 
     <script>
         let html5QrCode;
-        let cameraId;
+        let currentCameraId;
 
         // ฟังก์ชันที่ใช้สำหรับการประมวลผลหลังจากสแกน QR Code
         async function onScanSuccess(decodedText) {
@@ -79,23 +86,11 @@
         }
 
         // ฟังก์ชันสำหรับเริ่มต้นกล้อง
-        async function startCamera() {
+        async function startCamera(cameraId = null) {
             try {
-                // รับรายการกล้องทั้งหมด
-                const cameras = await Html5Qrcode.getCameras();
+                html5QrCode = new Html5QrCode("reader");
 
-                // เลือกกล้องหลังโดยการค้นหาคำว่า "back" ใน label
-                const backCamera = cameras.find(camera => camera.label.toLowerCase().includes('environment'));
-
-                if (!backCamera) {
-                    alert("No back camera found.");
-                    return;
-                }
-
-                cameraId = backCamera.id;
-
-                // เริ่มต้น Html5QrCode สำหรับการสแกน
-                html5QrCode = new Html5Qrcode("reader");
+                // ใช้กล้องที่เลือก
                 await html5QrCode.start(
                     cameraId,
                     { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -109,14 +104,48 @@
             }
         }
 
+        // ฟังก์ชันสำหรับโหลดรายการกล้อง
+        async function loadCameras() {
+            try {
+                const cameras = await Html5Qrcode.getCameras();
+                const cameraSelect = document.getElementById('camera-select');
+
+                cameras.forEach(camera => {
+                    const option = document.createElement('option');
+                    option.value = camera.id;
+                    option.text = camera.label || `Camera ${camera.id}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                // ตั้งค่ากล้องแรกเป็นค่าปกติ
+                if (cameras.length > 0) {
+                    currentCameraId = cameras[0].id;
+                    cameraSelect.value = currentCameraId;
+                    startCamera(currentCameraId);
+                }
+
+                cameraSelect.addEventListener('change', async () => {
+                    if (html5QrCode) {
+                        await html5QrCode.stop();
+                    }
+                    currentCameraId = cameraSelect.value;
+                    startCamera(currentCameraId);
+                });
+
+            } catch (error) {
+                console.error("Error loading cameras:", error);
+                document.getElementById('error-message').textContent = "Error loading cameras.";
+            }
+        }
+
         // ฟังก์ชันสำหรับเริ่มต้นใหม่
         function restartScanner() {
             document.getElementById('restart-btn').style.display = 'none';
-            startCamera();
+            startCamera(currentCameraId);
         }
 
-        // เริ่มต้นการทำงาน
-        startCamera();
+        // โหลดกล้องและเริ่มต้นการทำงาน
+        loadCameras();
     </script>
 </body>
 </html>
