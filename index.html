@@ -55,7 +55,7 @@
     <script>
         // ฟังก์ชันที่ใช้สำหรับการประมวลผลหลังจากสแกน QR Code
         function onScanSuccess(decodedText, decodedResult) {
-            console.log(`QR Code Scanned: ${decodedText}`);
+            alert(`QR Code Scanned: ${decodedText}`);
 
             // ส่งข้อมูลที่สแกนได้ไปยัง API
             fetch('https://your-cloud-run-url/submit_qr_data', {
