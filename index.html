@@ -73,6 +73,7 @@
                     body: JSON.stringify({ result: decodedText }),
                     signal: signal
                 });
+                alert(response)
 
                 clearTimeout(timeoutId);
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
