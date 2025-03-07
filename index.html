@@ -61,25 +61,20 @@
         // ฟังก์ชันสำหรับส่งข้อมูลไปยัง API
         async function sendQrData(decodedText) {
             const url = 'https://qrcodecheckin-523414082032.asia-southeast1.run.app';
-            const timeout = 5000; // Timeout 5 วินาที
-            const controller = new AbortController();
-            const signal = controller.signal;
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-
+            alert('Sending data to API:', decodedText); // ตรวจสอบค่าที่ส่งไป
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ result: decodedText }),
-                    signal: signal
+                    body: JSON.stringify({ result: decodedText })
                 });
-                alert(response)
-
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                if (!response.ok) {
+                    console.error("API Error:", response.status);
+                    throw new Error('Failed to send data');
+                }
                 return await response.json();
             } catch (error) {
-                clearTimeout(timeoutId);
+                console.error("Error sending data:", error);
                 throw error;
             }
         }
