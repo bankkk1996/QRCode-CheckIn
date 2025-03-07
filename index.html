@@ -39,66 +39,45 @@
     </style>
 </head>
 <body>
-    <h1>QR Code Scanner</h1>
-    <div id="reader"></div>
-    <div class="result" id="result">Scan result will appear here</div>
-    <div class="button-container">
-        <button id="restart">Restart Scan</button>
-    </div>
+    <h1>Scan QR Code</h1>
+
+    <!-- กรอบสำหรับแสดงการสแกน QR Code -->
+    <div id="reader" style="width: 600px; height: 400px;"></div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const html5QrCode = new Html5Qrcode("reader");
-            const resultElement = document.getElementById("result");
-            const restartButton = document.getElementById("restart");
+        // ฟังก์ชันที่ใช้สำหรับการประมวลผลหลังจากสแกน QR Code
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`QR Code Scanned: ${decodedText}`);
 
-            // กำหนดสถานะของการสแกน
-            let isScanning = true;
-
-            const qrCodeSuccessCallback = (decodedText) => {
-                if (isScanning) {
-                    // หยุดการสแกนชั่วคราว
-                    isScanning = false;
-                    html5QrCode.stop().then(() => {
-                        // แสดงผลลัพธ์ที่สแกนได้
-                        resultElement.textContent = `Scanned Result: ${decodedText}`;
-
-                        // คุณสามารถใส่โค้ดประมวลผลผลลัพธ์ตรงนี้
-                        console.log("Processing result:", decodedText);
-                    }).catch(err => {
-                        console.error("Error stopping scanner:", err);
-                    });
-                }
-            };
-
-            const config = {
-                fps: 10,
-                qrbox: { width: 300, height: 300 }
-            };
-
-            // เริ่มการสแกน
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                qrCodeSuccessCallback
-            ).catch(err => {
-                console.error("Error starting the scanner:", err);
+            // ส่งข้อมูลที่สแกนได้ไปยัง API
+            fetch('https://qrcodecheckin-523414082032.asia-southeast1.run.app', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    result: decodedText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Data sent to API:", data);
+            })
+            .catch(error => {
+                console.error("Error sending data to API:", error);
             });
+        }
 
-            // กดปุ่มเพื่อเริ่มสแกนใหม่
-            restartButton.addEventListener("click", () => {
-                isScanning = true; // ตั้งสถานะเป็นสแกนอีกครั้ง
-                resultElement.textContent = "Scan result will appear here";
+        // ฟังก์ชันที่ใช้สำหรับการจัดการข้อผิดพลาด
+        function onScanError(errorMessage) {
+            console.warn(errorMessage);
+        }
 
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    config,
-                    qrCodeSuccessCallback
-                ).catch(err => {
-                    console.error("Error restarting the scanner:", err);
-                });
-            });
-        });
+        // เริ่มการสแกน QR Code
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 250 }
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
     </script>
 </body>
 </html>
