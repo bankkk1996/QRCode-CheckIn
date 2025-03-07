@@ -103,7 +103,7 @@
                 alert(`Data sent to API: ${JSON.stringify(data)}`);
             } catch (error) {
                 console.error("Error sending data to API:", error);
-                errorMessage.textContent = 'Failed to send data to API. Please try again.';
+                errorMessage.textContent = 'Failed to send data to API. Please try again.'+' '+error;
             } finally {
                 loading.style.display = 'none';
                 restartBtn.style.display = 'inline-block'; // แสดงปุ่มเริ่มใหม่
