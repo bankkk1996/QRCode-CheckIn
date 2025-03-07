@@ -56,98 +56,67 @@
     <button id="restart-btn" onclick="restartScanner()">Start Again</button>
 
     <script>
-        let html5QrcodeScanner; // ตัวแปรสำหรับควบคุมการสแกน
+        let html5QrCode;
+        let cameraId;
 
-        // ฟังก์ชันสำหรับส่งข้อมูลไปยัง API
-        async function sendQrData(decodedText) {
-            const url = 'https://your-cloud-run-url/submit_qr_data';
-            const timeout = 5000; // Timeout 5 วินาที
-            const controller = new AbortController();
-            const signal = controller.signal;
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ result: decodedText }),
-                    signal: signal
-                });
-
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                clearTimeout(timeoutId);
-                throw error;
-            }
-        }
-
-        // ฟังก์ชันสำหรับจัดการผลการสแกน
-        async function onScanSuccess(decodedText, decodedResult) {
+        // ฟังก์ชันที่ใช้สำหรับการประมวลผลหลังจากสแกน QR Code
+        async function onScanSuccess(decodedText) {
             console.log(`QR Code Scanned: ${decodedText}`);
-            const loading = document.getElementById('loading');
-            const errorMessage = document.getElementById('error-message');
-            const restartBtn = document.getElementById('restart-btn');
+            alert(`QR Code Scanned: ${decodedText}`);
 
-            // แสดงข้อความกำลังประมวลผล
-            loading.style.display = 'block';
-            errorMessage.textContent = '';
-
-            // หยุดการสแกน
-            html5QrcodeScanner.clear();
-
-            try {
-                const data = await sendQrData(decodedText);
-                alert(`Data sent to API: ${JSON.stringify(data)}`);
-            } catch (error) {
-                console.error("Error sending data to API:", error);
-                errorMessage.textContent = 'Failed to send data to API. Please try again.';
-            } finally {
-                loading.style.display = 'none';
-                restartBtn.style.display = 'inline-block'; // แสดงปุ่มเริ่มใหม่
+            // หยุดการสแกนหลังจากสแกนสำเร็จ
+            if (html5QrCode) {
+                await html5QrCode.stop();
             }
+
+            // แสดงปุ่มเริ่มใหม่
+            document.getElementById('restart-btn').style.display = 'inline-block';
         }
 
-        // ฟังก์ชันสำหรับจัดการข้อผิดพลาดขณะสแกน
+        // ฟังก์ชันจัดการข้อผิดพลาด
         function onScanError(errorMessage) {
             console.warn("Scan error:", errorMessage);
-
-            // แสดงข้อความข้อผิดพลาด
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = `Error: ${errorMessage}`;
         }
 
-        // ฟังก์ชันเริ่มต้น HTML5 QR Code Scanner
-        function startScanner() {
-            const screenWidth = window.innerWidth;
-            const qrboxSize = screenWidth < 600 ? 200 : 250; // ขนาด QR Box สำหรับมือถือและจอใหญ่
+        // ฟังก์ชันสำหรับเริ่มต้นกล้อง
+        async function startCamera() {
+            try {
+                // รับรายการกล้องทั้งหมด
+                const cameras = await Html5Qrcode.getCameras();
 
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", {
-                    fps: 10,
-                    qrbox: { width: qrboxSize, height: qrboxSize }
+                // เลือกกล้องหลังโดยการค้นหาคำว่า "back" ใน label
+                const backCamera = cameras.find(camera => camera.label.toLowerCase().includes('back'));
+
+                if (!backCamera) {
+                    alert("No back camera found.");
+                    return;
                 }
-            );
 
-            html5QrcodeScanner.render(onScanSuccess, onScanError);
+                cameraId = backCamera.id;
+
+                // เริ่มต้น Html5QrCode สำหรับการสแกน
+                html5QrCode = new Html5Qrcode("reader");
+                await html5QrCode.start(
+                    cameraId,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    onScanSuccess,
+                    onScanError
+                );
+
+            } catch (error) {
+                console.error("Error initializing camera:", error);
+                document.getElementById('error-message').textContent = "Error initializing camera.";
+            }
         }
 
         // ฟังก์ชันสำหรับเริ่มต้นใหม่
         function restartScanner() {
-            const restartBtn = document.getElementById('restart-btn');
-            const errorMessage = document.getElementById('error-message');
-
-            // ซ่อนปุ่มเริ่มใหม่และข้อความข้อผิดพลาด
-            restartBtn.style.display = 'none';
-            errorMessage.textContent = '';
-
-            // เรียกเริ่มต้นการสแกนใหม่
-            startScanner();
+            document.getElementById('restart-btn').style.display = 'none';
+            startCamera();
         }
 
-        // เริ่มต้นการสแกนครั้งแรก
-        startScanner();
+        // เริ่มต้นการทำงาน
+        startCamera();
     </script>
 </body>
 </html>
