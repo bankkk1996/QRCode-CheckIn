@@ -8,41 +8,24 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f8f9fa;
-        }
-
-        h1 {
-            font-size: 1.5em;
             text-align: center;
-            color: #333;
+            padding: 20px;
         }
-
         #reader {
-            width: 90%;
-            max-width: 400px;
-            aspect-ratio: 1;
             margin: 0 auto;
-            background: #e9ecef;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            height: auto;
         }
-
-        @media (min-width: 768px) {
-            h1 {
-                font-size: 2em;
-            }
-
-            #reader {
-                max-width: 600px;
-            }
+        #loading {
+            display: none;
+            font-size: 18px;
+            color: blue;
+            margin-top: 10px;
+        }
+        #error-message {
+            color: red;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -52,42 +35,77 @@
     <!-- กรอบสำหรับแสดงการสแกน QR Code -->
     <div id="reader"></div>
 
+    <!-- ข้อความแจ้งเตือน -->
+    <div id="loading">Processing...</div>
+    <div id="error-message"></div>
+
     <script>
-        // ฟังก์ชันที่ใช้สำหรับการประมวลผลหลังจากสแกน QR Code
-        function onScanSuccess(decodedText, decodedResult) {
-            alert(`QR Code Scanned: ${decodedText}`);
+        // ฟังก์ชันสำหรับส่งข้อมูลไปยัง API
+        async function sendQrData(decodedText) {
+            const url = 'https://your-cloud-run-url/submit_qr_data';
+            const timeout = 5000; // Timeout 5 วินาที
+            const controller = new AbortController();
+            const signal = controller.signal;
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-            // ส่งข้อมูลที่สแกนได้ไปยัง API
-            fetch('https://your-cloud-run-url/submit_qr_data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    result: decodedText
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert("Data sent to API:", data);
-            })
-            .catch(error => {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ result: decodedText }),
+                    signal: signal
+                });
+
+                clearTimeout(timeoutId);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
+        }
+
+        // ฟังก์ชันสำหรับจัดการผลการสแกน
+        async function onScanSuccess(decodedText, decodedResult) {
+            console.log(`QR Code Scanned: ${decodedText}`);
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+
+            // แสดงข้อความกำลังประมวลผล
+            loading.style.display = 'block';
+            errorMessage.textContent = '';
+
+            try {
+                const data = await sendQrData(decodedText);
+                alert(`Data sent to API: ${JSON.stringify(data)}`);
+            } catch (error) {
                 console.error("Error sending data to API:", error);
-            });
+                errorMessage.textContent = 'Failed to send data to API. Please try again.';
+            } finally {
+                loading.style.display = 'none';
+            }
         }
 
-        // ฟังก์ชันที่ใช้สำหรับการจัดการข้อผิดพลาด
+        // ฟังก์ชันสำหรับจัดการข้อผิดพลาดขณะสแกน
         function onScanError(errorMessage) {
-            console.warn(errorMessage);
+            console.warn("Scan error:", errorMessage);
+
+            // แสดงข้อความข้อผิดพลาด
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = `Error: ${errorMessage}`;
         }
 
-        // เริ่มการสแกน QR Code
+        // เริ่มต้น HTML5 QR Code Scanner
+        const screenWidth = window.innerWidth;
+        const qrboxSize = screenWidth < 600 ? 200 : 250; // ขนาด QR Box สำหรับมือถือและจอใหญ่
+
         const html5QrcodeScanner = new Html5QrcodeScanner(
             "reader", {
                 fps: 10,
-                qrbox: { width: 250, height: 250 } // ปรับขนาดให้เหมาะกับมือถือ
+                qrbox: { width: qrboxSize, height: qrboxSize }
             }
         );
+
         html5QrcodeScanner.render(onScanSuccess, onScanError);
     </script>
 </body>
