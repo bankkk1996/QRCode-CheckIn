@@ -12,12 +12,35 @@
             const resultDiv = document.getElementById("result");
 
             const scanner = new QrScanner(video, result => {
-                resultDiv.innerText = `QR Code: ${result}`;
-                console.log("Scanned QR Code:", result);
+                
+
+                // ส่งข้อมูล QR code ไปยัง backend
+                sendToBackend(result);
             });
 
             scanner.start();
         };
+
+        async function sendToBackend(decodedText) {
+            try {
+                const response = await fetch("https://qrcodecheckin-523414082032.asia-southeast1.run.app", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ id: decodedText })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerText = `QR Code: ${data}`;
+                } else {
+                    console.error("Error sending data to backend");
+                }
+            } catch (error) {
+                console.error("Failed to send data to backend:", error);
+            }
+        }
     </script>
 </head>
 <body>
