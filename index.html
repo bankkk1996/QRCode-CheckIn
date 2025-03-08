@@ -125,22 +125,11 @@
             return;
           }
 
-          alert(JSON.stringify(devices, null, 2));
-
-          // ค้นหากล้องหลัง (กล้องที่มีคำว่า 'back' หรือ 'environment')
-          const backCamera = devices.find(
-            (device) =>
-              device.label.toLowerCase().includes("ด้านหลัง") ||
-              device.facing === "environment"
-          );
-
-          // เลือกกล้องหลัง (หรือถ้าไม่มีเลือกกล้องตัวแรก)
-          const cameraId = backCamera ? backCamera.id : devices[0].id;
+          
 
           // เริ่มการสแกนด้วยกล้องที่เลือก
           html5QrcodeScanner = new Html5Qrcode("reader");
           html5QrcodeScanner.start(
-            cameraId,
             { fps: 10, qrbox: { width: 300, height: 300 } },
             onScanSuccess,
             onScanError
