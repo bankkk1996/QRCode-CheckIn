@@ -46,94 +46,79 @@
 <body>
     <h1>Scan QR Code</h1>
 
+    <!-- กรอบสำหรับแสดงการสแกน QR Code -->
     <div id="reader"></div>
 
+    <h2>Enter Your ID (if QR scan fails)</h2>
+    <input type="text" id="manual-id" placeholder="Enter ID">
+    <button onclick="sendManualId()">Submit</button>
+
+    <!-- ข้อความแจ้งเตือน -->
     <div id="loading">Processing...</div>
     <div id="error-message"></div>
+
+    <h2>Response from Backend:</h2>
+    <p id="response"></p>
 
     <button id="restart-btn" onclick="restartScanner()">Start Again</button>
 
     <script>
         let html5QrcodeScanner;
 
+        const API_URL = "https://qrcodecheckin-523414082032.asia-southeast1.run.app"; // เปลี่ยนเป็น URL ของ Cloud Function
+
         async function sendQrData(decodedText) {
-            const url = 'https://qrcodecheckin-523414082032.asia-southeast1.run.app';
-            alert('Sending data to API: ' + decodedText); 
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("error-message").textContent = "";
 
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ result: decodedText }) // ส่งค่า QR Code ที่อ่านได้จริง
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: decodedText })  // ส่งค่า ID ไปที่ backend
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Failed to send data: ${response.status}`);
-                }
+                if (!response.ok) throw new Error("Failed to fetch");
 
-                return await response.json();
+                const data = await response.json();
+                document.getElementById("response").innerText = data.message;
             } catch (error) {
-                console.error("Error sending data:", error);
-                throw error;
+                document.getElementById("error-message").textContent = "Error: " + error.message;
+            } finally {
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("restart-btn").style.display = "inline-block";
             }
         }
 
-        async function onScanSuccess(decodedText, decodedResult) {
+        function onScanSuccess(decodedText) {
             console.log(`QR Code Scanned: ${decodedText}`);
-            const loading = document.getElementById('loading');
-            const errorMessage = document.getElementById('error-message');
-            const restartBtn = document.getElementById('restart-btn');
-
-            loading.style.display = 'block';
-            errorMessage.textContent = '';
-
             html5QrcodeScanner.clear();
-
-            try {
-                const data = await sendQrData(decodedText);
-                alert(`Data sent to API: ${JSON.stringify(data)}`);
-            } catch (error) {
-                console.error("Error sending data to API:", error);
-                errorMessage.textContent = 'Failed to send data to API. Please try again.';
-            } finally {
-                loading.style.display = 'none';
-                restartBtn.style.display = 'inline-block';
-            }
+            sendQrData(decodedText);
         }
 
         function onScanError(errorMessage) {
             console.warn("Scan error:", errorMessage);
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = `Error: ${errorMessage}`;
-
-            // // ลบข้อความหลังจาก 3 วินาที
-            // setTimeout(() => {
-            //     errorDiv.textContent = '';
-            // }, 3000);
+            document.getElementById("error-message").textContent = `Error: ${errorMessage}`;
         }
 
         function startScanner() {
-            const screenWidth = window.innerWidth;
-            const qrboxSize = screenWidth < 600 ? 200 : 250;
-
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", {
-                    fps: 10,
-                    qrbox: { width: qrboxSize, height: qrboxSize }
-                }
-            );
-
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } });
             html5QrcodeScanner.render(onScanSuccess, onScanError);
         }
 
         function restartScanner() {
-            const restartBtn = document.getElementById('restart-btn');
-            const errorMessage = document.getElementById('error-message');
-
-            restartBtn.style.display = 'none';
-            errorMessage.textContent = '';
-
+            document.getElementById("restart-btn").style.display = "none";
+            document.getElementById("error-message").textContent = "";
             startScanner();
+        }
+
+        async function sendManualId() {
+            const manualId = document.getElementById("manual-id").value;
+            if (!manualId) {
+                alert("Please enter an ID.");
+                return;
+            }
+            sendQrData(manualId);
         }
 
         startScanner();
