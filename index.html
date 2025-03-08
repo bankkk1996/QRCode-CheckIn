@@ -175,7 +175,7 @@
         });
 
         // เริ่มต้นด้วยกล้องตัวแรกในรายการ
-        const defaultCameraId = devices[0].id;
+        const defaultCameraId = devices[devices.length - 1].id;
 
         cameraSelect.value = defaultCameraId;
         selectedCameraId = defaultCameraId;
