@@ -152,6 +152,7 @@
             // Select the last used camera if available
             if (selectedCameraId) {
                 cameraSelect.value = selectedCameraId;
+                onCameraChange({ target: { value: selectedCameraId } });  // เริ่มการสแกนเมื่อเลือกกล้อง
             }
         }
 
