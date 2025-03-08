@@ -16,6 +16,35 @@
         width: 100%;
         max-width: 400px;
         height: auto;
+        position: relative;
+      }
+      .qr-box {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: 300px;
+        border: 3px dashed #4caf50;
+        background-color: rgba(255, 255, 255, 0.5);
+        box-sizing: border-box;
+      }
+      .qr-box:before,
+      .qr-box:after {
+        content: "";
+        position: absolute;
+        background-color: #4caf50;
+        width: 2px;
+        height: 100%;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .qr-box:after {
+        width: 100%;
+        height: 2px;
+        left: 0;
+        top: 50%;
       }
       #loading {
         display: none;
@@ -67,7 +96,9 @@
       <!-- ตัวเลือกกล้องจะถูกเพิ่มที่นี่ -->
     </select>
 
-    <div id="reader"></div>
+    <div id="reader">
+      <div class="qr-box"></div> <!-- กรอบ QR Code -->
+    </div>
 
     <h2>Enter Your ID (if QR scan fails)</h2>
     <input type="text" id="manual-id" placeholder="Enter ID" />
@@ -114,7 +145,7 @@
 
       function onScanSuccess(decodedText) {
         console.log(`QR Code Scanned: ${decodedText}`);
-        html5QrcodeScanner.clear();
+        stopScanner(); // หยุดการสแกนก่อนที่จะเคลียร์
         sendQrData(decodedText);
       }
 
@@ -128,12 +159,18 @@
       async function startScanner(cameraId) {
         try {
           // เรียกขอสิทธิ์เพื่อใช้กล้องทุกตัว
-          await navigator.mediaDevices.getUserMedia({ video: true }); // ไม่มีการระบุ deviceId เพื่อให้สามารถใช้กล้องใดๆ ก็ได้
+          await navigator.mediaDevices.getUserMedia({ video: true });
 
-          html5QrcodeScanner = new Html5Qrcode("reader");
+          html5QrcodeScanner = new Html5Qrcode("reader", {
+            constraints: {
+              video: {
+                facingMode: "environment", // เลือกกล้องหลัง
+              },
+            },
+          });
           html5QrcodeScanner.start(
             cameraId,
-            { fps: 10, qrbox: { width: 300, height: 300 } },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
             onScanSuccess,
             onScanError
           );
@@ -146,6 +183,7 @@
       function onCameraChange(event) {
         const cameraId = event.target.value;
         selectedCameraId = cameraId; // บันทึกกล้องที่เลือก
+        stopScanner(); // หยุดการสแกนก่อนที่จะเริ่มใหม่
         startScanner(cameraId); // เริ่มการสแกนทันทีหลังจากเลือกกล้อง
       }
 
@@ -176,9 +214,20 @@
         startScanner(defaultCameraId); // เริ่มการสแกนทันที
       }
 
+      async function stopScanner() {
+        if (html5QrcodeScanner) {
+          try {
+            await html5QrcodeScanner.stop(); // หยุดการสแกนก่อนการเคลียร์
+          } catch (error) {
+            console.warn("Error stopping the scanner:", error);
+          }
+        }
+      }
+
       async function restartScanner() {
         document.getElementById("restart-btn").style.display = "none";
         document.getElementById("error-message").textContent = "";
+        stopScanner(); // หยุดการสแกนก่อนที่จะเริ่มใหม่
         startScanner(selectedCameraId);
       }
 
