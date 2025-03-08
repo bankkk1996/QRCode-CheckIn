@@ -101,30 +101,36 @@
             document.getElementById("error-message").textContent = `Error: ${errorMessage}`;
         }
 
-        function startScanner() {
-            Html5Qrcode.getCameras()
-                .then(devices => {
-                    if (devices.length === 0) {
-                        alert("No camera found");
-                        return;
-                    }
-                    
-                    // ค้นหากล้องหลัง (back camera)
-                    const backCamera = devices.find(device => device.facing === "environment");
-                    const cameraId = backCamera ? backCamera.id : devices[0].id;
+        async function startScanner() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-                    // สร้างตัวสแกน QR Code โดยใช้กล้องที่เลือก
-                    html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-                        fps: 10, 
-                        qrbox: { width: 250, height: 250 },
-                        rememberLastUsedCamera: true
-                    });
-                    html5QrcodeScanner.render(onScanSuccess, onScanError);
-                })
-                .catch(err => {
-                    console.error("Error accessing devices:", err);
-                    alert("Error accessing camera");
+                if (videoDevices.length === 0) {
+                    alert("No video devices found.");
+                    return;
+                }
+
+                // ค้นหากล้องหลัง
+                const backCamera = videoDevices.find(device => device.label.toLowerCase().includes("ด้านหลัง") || device.facing === "environment");
+
+                // ถ้าไม่พบกล้องหลังให้เลือกกล้องแรกที่พบ
+                const cameraId = backCamera ? backCamera.deviceId : videoDevices[0].deviceId;
+
+                // เริ่มใช้งานกล้องที่เลือก
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    rememberLastUsedCamera: true
                 });
+
+                html5QrcodeScanner.render(onScanSuccess, onScanError);
+
+                // เรียกใช้กล้องที่เลือกโดย ID
+                html5QrcodeScanner.start(cameraId);
+            } catch (error) {
+                document.getElementById("error-message").textContent = "Error: " + error.message;
+            }
         }
 
         function restartScanner() {
