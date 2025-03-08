@@ -101,35 +101,30 @@
             document.getElementById("error-message").textContent = `Error: ${errorMessage}`;
         }
 
-        async function startScanner() {
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices.length === 0) {
-                    document.getElementById("error-message").textContent = "No camera found!";
-                    return;
-                }
+        function startScanner() {
+            Html5Qrcode.getCameras()
+                .then(devices => {
+                    if (devices.length === 0) {
+                        alert("No camera found");
+                        return;
+                    }
+                    
+                    // ค้นหากล้องหลัง (back camera)
+                    const backCamera = devices.find(device => device.facing === "environment");
+                    const cameraId = backCamera ? backCamera.id : devices[0].id;
 
-                // ค้นหากล้องหลัง (back camera)
-                const backCamera = devices.find(
-                    (device) => device.label.toLowerCase().includes("back") || device.facing === "environment"
-                );
-
-                if (!backCamera) {
-                    document.getElementById("error-message").textContent = "No back camera found!";
-                    return;
-                }
-
-                const cameraId = backCamera.id;
-
-                // เริ่มการสแกน QR Code ด้วยกล้องหลัง
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
+                    // สร้างตัวสแกน QR Code โดยใช้กล้องที่เลือก
+                    html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                        fps: 10, 
+                        qrbox: { width: 250, height: 250 },
+                        rememberLastUsedCamera: true
+                    });
+                    html5QrcodeScanner.render(onScanSuccess, onScanError);
+                })
+                .catch(err => {
+                    console.error("Error accessing devices:", err);
+                    alert("Error accessing camera");
                 });
-                html5QrcodeScanner.render(onScanSuccess, onScanError, cameraId);  // ใช้ cameraId ของกล้องหลัง
-            } catch (error) {
-                document.getElementById("error-message").textContent = "Camera access error: " + error.message;
-            }
         }
 
         function restartScanner() {
