@@ -46,32 +46,31 @@
 <body>
     <h1>Scan QR Code</h1>
 
-    <!-- กรอบสำหรับแสดงการสแกน QR Code -->
     <div id="reader"></div>
 
-    <!-- ข้อความแจ้งเตือน -->
     <div id="loading">Processing...</div>
     <div id="error-message"></div>
 
     <button id="restart-btn" onclick="restartScanner()">Start Again</button>
 
     <script>
-        let html5QrcodeScanner; // ตัวแปรสำหรับควบคุมการสแกน
+        let html5QrcodeScanner;
 
-        // ฟังก์ชันสำหรับส่งข้อมูลไปยัง API
         async function sendQrData(decodedText) {
             const url = 'https://qrcodecheckin-523414082032.asia-southeast1.run.app';
-            alert('Sending data to API:', decodedText); // ตรวจสอบค่าที่ส่งไป
+            alert('Sending data to API: ' + decodedText); 
+
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ result: 2222 })
+                    body: JSON.stringify({ result: decodedText }) // ส่งค่า QR Code ที่อ่านได้จริง
                 });
+
                 if (!response.ok) {
-                    console.error("API Error:", response.status);
-                    throw new Error('Failed to send data');
+                    throw new Error(`Failed to send data: ${response.status}`);
                 }
+
                 return await response.json();
             } catch (error) {
                 console.error("Error sending data:", error);
@@ -79,18 +78,15 @@
             }
         }
 
-        // ฟังก์ชันสำหรับจัดการผลการสแกน
         async function onScanSuccess(decodedText, decodedResult) {
             console.log(`QR Code Scanned: ${decodedText}`);
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
             const restartBtn = document.getElementById('restart-btn');
 
-            // แสดงข้อความกำลังประมวลผล
             loading.style.display = 'block';
             errorMessage.textContent = '';
 
-            // หยุดการสแกน
             html5QrcodeScanner.clear();
 
             try {
@@ -98,26 +94,27 @@
                 alert(`Data sent to API: ${JSON.stringify(data)}`);
             } catch (error) {
                 console.error("Error sending data to API:", error);
-                errorMessage.textContent = 'Failed to send data to API. Please try again.'+' '+error;
+                errorMessage.textContent = 'Failed to send data to API. Please try again.';
             } finally {
                 loading.style.display = 'none';
-                restartBtn.style.display = 'inline-block'; // แสดงปุ่มเริ่มใหม่
+                restartBtn.style.display = 'inline-block';
             }
         }
 
-        // ฟังก์ชันสำหรับจัดการข้อผิดพลาดขณะสแกน
         function onScanError(errorMessage) {
             console.warn("Scan error:", errorMessage);
-
-            // แสดงข้อความข้อผิดพลาด
             const errorDiv = document.getElementById('error-message');
             errorDiv.textContent = `Error: ${errorMessage}`;
+
+            // ลบข้อความหลังจาก 3 วินาที
+            setTimeout(() => {
+                errorDiv.textContent = '';
+            }, 3000);
         }
 
-        // ฟังก์ชันเริ่มต้น HTML5 QR Code Scanner
         function startScanner() {
             const screenWidth = window.innerWidth;
-            const qrboxSize = screenWidth < 600 ? 200 : 250; // ขนาด QR Box สำหรับมือถือและจอใหญ่
+            const qrboxSize = screenWidth < 600 ? 200 : 250;
 
             html5QrcodeScanner = new Html5QrcodeScanner(
                 "reader", {
@@ -129,20 +126,16 @@
             html5QrcodeScanner.render(onScanSuccess, onScanError);
         }
 
-        // ฟังก์ชันสำหรับเริ่มต้นใหม่
         function restartScanner() {
             const restartBtn = document.getElementById('restart-btn');
             const errorMessage = document.getElementById('error-message');
 
-            // ซ่อนปุ่มเริ่มใหม่และข้อความข้อผิดพลาด
             restartBtn.style.display = 'none';
             errorMessage.textContent = '';
 
-            // เรียกเริ่มต้นการสแกนใหม่
             startScanner();
         }
 
-        // เริ่มต้นการสแกนครั้งแรก
         startScanner();
     </script>
 </body>
