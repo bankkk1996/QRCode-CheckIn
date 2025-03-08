@@ -64,6 +64,7 @@
 
     <script>
         let html5QrcodeScanner;
+        let selectedCameraId = localStorage.getItem("selectedCameraId"); // ใช้ localStorage ในการจดจำกล้องที่เลือก
 
         const API_URL = "https://qrcodecheckin-523414082032.asia-southeast1.run.app"; // เปลี่ยนเป็น URL ของ Cloud Function
 
@@ -103,19 +104,21 @@
 
         async function startScanner() {
             try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                const devices = await Html5Qrcode.getCameras();
 
-                if (videoDevices.length === 0) {
+                if (devices.length === 0) {
                     alert("No video devices found.");
                     return;
                 }
 
                 // ค้นหากล้องหลัง
-                const backCamera = videoDevices.find(device => device.label.toLowerCase().includes("ด้านหลัง") || device.facing === "environment");
+                const backCamera = devices.find(device => device.label.toLowerCase().includes("ด้านหลัง") || device.facing === "environment");
 
                 // ถ้าไม่พบกล้องหลังให้เลือกกล้องแรกที่พบ
-                const cameraId = backCamera ? backCamera.deviceId : videoDevices[0].deviceId;
+                const cameraId = selectedCameraId || (backCamera ? backCamera.deviceId : devices[0].deviceId);
+
+                // เรียกขอสิทธิ์เพื่อใช้กล้อง
+                await navigator.mediaDevices.getUserMedia({ video: { deviceId: cameraId } });
 
                 // เริ่มใช้งานกล้องที่เลือก
                 html5QrcodeScanner = new Html5QrcodeScanner("reader", {
@@ -124,10 +127,8 @@
                     rememberLastUsedCamera: true
                 });
 
-                html5QrcodeScanner.render(onScanSuccess, onScanError);
+                html5QrcodeScanner.render(onScanSuccess, onScanError); // เริ่มต้นการสแกนด้วย render()
 
-                // เรียกใช้กล้องที่เลือกโดย ID
-                html5QrcodeScanner.start(cameraId);
             } catch (error) {
                 document.getElementById("error-message").textContent = "Error: " + error.message;
             }
@@ -148,6 +149,13 @@
             sendQrData(manualId);
         }
 
+        // เมื่อผู้ใช้เลือกกล้อง ให้บันทึกกล้องที่เลือก
+        function onCameraChange(cameraId) {
+            selectedCameraId = cameraId;
+            localStorage.setItem("selectedCameraId", cameraId); // บันทึกกล้องที่เลือกใน localStorage
+        }
+
+        // เริ่มต้นการสแกน
         startScanner();
     </script>
 </body>
