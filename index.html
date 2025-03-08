@@ -41,6 +41,11 @@
         #restart-btn:hover {
             background-color: #45a049;
         }
+        select {
+            margin-top: 20px;
+            padding: 5px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +66,12 @@
     <p id="response"></p>
 
     <button id="restart-btn" onclick="restartScanner()">Start Again</button>
+
+    <!-- ตัวเลือกสำหรับเลือกกล้อง -->
+    <h2>Select Camera:</h2>
+    <select id="camera-select" onchange="onCameraChange(event)">
+        <!-- ตัวเลือกกล้องจะถูกเพิ่มที่นี่ -->
+    </select>
 
     <script>
         let html5QrcodeScanner;
@@ -102,21 +113,8 @@
             document.getElementById("error-message").textContent = `Error: ${errorMessage}`;
         }
 
-        async function startScanner() {
+        async function startScanner(cameraId) {
             try {
-                const devices = await Html5Qrcode.getCameras();
-
-                if (devices.length === 0) {
-                    alert("No video devices found.");
-                    return;
-                }
-
-                // ค้นหากล้องหลัง
-                const backCamera = devices.find(device => device.label.toLowerCase().includes("ด้านหลัง") || device.facing === "environment");
-
-                // ถ้าไม่พบกล้องหลังให้เลือกกล้องแรกที่พบ
-                const cameraId = selectedCameraId || (backCamera ? backCamera.deviceId : devices[0].deviceId);
-
                 // เรียกขอสิทธิ์เพื่อใช้กล้อง
                 await navigator.mediaDevices.getUserMedia({ video: { deviceId: cameraId } });
 
@@ -134,10 +132,41 @@
             }
         }
 
-        function restartScanner() {
+        async function getAvailableCameras() {
+            const devices = await Html5Qrcode.getCameras();
+            if (devices.length === 0) {
+                alert("No video devices found.");
+                return [];
+            }
+
+            const cameraSelect = document.getElementById("camera-select");
+            cameraSelect.innerHTML = '';  // Clear previous options
+
+            devices.forEach((device, index) => {
+                const option = document.createElement("option");
+                option.value = device.deviceId;
+                option.textContent = device.label || `Camera ${index + 1}`;
+                cameraSelect.appendChild(option);
+            });
+
+            // Select the last used camera if available
+            if (selectedCameraId) {
+                cameraSelect.value = selectedCameraId;
+            }
+        }
+
+        function onCameraChange(event) {
+            const cameraId = event.target.value;
+            selectedCameraId = cameraId;
+            localStorage.setItem("selectedCameraId", cameraId); // บันทึกกล้องที่เลือกใน localStorage
+            startScanner(cameraId); // เริ่มต้นการสแกนด้วยกล้องที่เลือก
+        }
+
+        async function restartScanner() {
             document.getElementById("restart-btn").style.display = "none";
             document.getElementById("error-message").textContent = "";
-            startScanner();
+            const cameraId = document.getElementById("camera-select").value;
+            startScanner(cameraId);
         }
 
         async function sendManualId() {
@@ -149,14 +178,8 @@
             sendQrData(manualId);
         }
 
-        // เมื่อผู้ใช้เลือกกล้อง ให้บันทึกกล้องที่เลือก
-        function onCameraChange(cameraId) {
-            selectedCameraId = cameraId;
-            localStorage.setItem("selectedCameraId", cameraId); // บันทึกกล้องที่เลือกใน localStorage
-        }
-
-        // เริ่มต้นการสแกน
-        startScanner();
+        // เริ่มต้นการทำงาน
+        getAvailableCameras();  // ดึงกล้องทั้งหมดที่มี
     </script>
 </body>
 </html>
