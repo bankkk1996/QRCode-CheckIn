@@ -13,8 +13,8 @@
         }
         #reader {
             margin: 0 auto;
-            max-width: 400px;
             width: 100%;
+            max-width: 400px;
             height: auto;
         }
         #loading {
@@ -27,7 +27,7 @@
             color: red;
             margin-top: 10px;
         }
-        #restart-btn {
+        #restart-btn, #manual-submit {
             display: none;
             margin-top: 20px;
             padding: 10px 20px;
@@ -38,8 +38,17 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        #restart-btn:hover {
+        #restart-btn:hover, #manual-submit:hover {
             background-color: #45a049;
+        }
+        input {
+            padding: 10px;
+            width: 80%;
+            max-width: 300px;
+            margin-top: 10px;
+        }
+        #manual-submit {
+            display: inline-block;
         }
         select {
             margin-top: 20px;
@@ -51,31 +60,28 @@
 <body>
     <h1>Scan QR Code</h1>
 
-    <!-- กรอบสำหรับแสดงการสแกน QR Code -->
+    <h2>Select Camera:</h2>
+    <select id="camera-select" onchange="onCameraChange(event)">
+        <!-- ตัวเลือกกล้องจะถูกเพิ่มที่นี่ -->
+    </select>
+
     <div id="reader"></div>
 
     <h2>Enter Your ID (if QR scan fails)</h2>
     <input type="text" id="manual-id" placeholder="Enter ID">
-    <button onclick="sendManualId()">Submit</button>
+    <button id="manual-submit" onclick="sendManualId()">Submit</button>
 
-    <!-- ข้อความแจ้งเตือน -->
     <div id="loading">Processing...</div>
     <div id="error-message"></div>
 
     <h2>Response from Backend:</h2>
     <p id="response"></p>
 
-    <button id="restart-btn" onclick="restartScanner()">Start Again</button>
-
-    <!-- ตัวเลือกสำหรับเลือกกล้อง -->
-    <h2>Select Camera:</h2>
-    <select id="camera-select" onchange="onCameraChange(event)">
-        <!-- ตัวเลือกกล้องจะถูกเพิ่มที่นี่ -->
-    </select>
+    <button id="restart-btn" onclick="restartScanner()">Retry</button>
 
     <script>
         let html5QrcodeScanner;
-        let selectedCameraId = localStorage.getItem("selectedCameraId"); // ใช้ localStorage ในการจดจำกล้องที่เลือก
+        let selectedCameraId = null;
 
         const API_URL = "https://qrcodecheckin-523414082032.asia-southeast1.run.app"; // เปลี่ยนเป็น URL ของ Cloud Function
 
@@ -87,7 +93,7 @@
                 const response = await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: decodedText })  // ส่งค่า ID ไปที่ backend
+                    body: JSON.stringify({ id: decodedText })  
                 });
 
                 if (!response.ok) throw new Error("Failed to fetch");
@@ -115,28 +121,32 @@
 
         async function startScanner(cameraId) {
             try {
-                // เรียกขอสิทธิ์เพื่อใช้กล้อง
-                await navigator.mediaDevices.getUserMedia({ video: { deviceId: cameraId } });
+                // เรียกขอสิทธิ์เพื่อใช้กล้องทุกตัว
+                await navigator.mediaDevices.getUserMedia({ video: true }); // ไม่มีการระบุ deviceId เพื่อให้สามารถใช้กล้องใดๆ ก็ได้
 
-                // เริ่มใช้งานกล้องที่เลือก
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    rememberLastUsedCamera: true
-                });
-
-                html5QrcodeScanner.render(onScanSuccess, onScanError); // เริ่มต้นการสแกนด้วย render()
-
+                html5QrcodeScanner = new Html5Qrcode("reader");
+                html5QrcodeScanner.start(
+                    cameraId, 
+                    { fps: 10, qrbox: { width: 300, height: 300 } }, 
+                    onScanSuccess, 
+                    onScanError
+                );
             } catch (error) {
-                document.getElementById("error-message").textContent = "Error: " + error.message;
+                document.getElementById("error-message").textContent = "Camera access error: " + error.message;
             }
+        }
+
+        function onCameraChange(event) {
+            const cameraId = event.target.value;
+            selectedCameraId = cameraId; // บันทึกกล้องที่เลือก
+            startScanner(cameraId); // เริ่มการสแกนทันทีหลังจากเลือกกล้อง
         }
 
         async function getAvailableCameras() {
             const devices = await Html5Qrcode.getCameras();
             if (devices.length === 0) {
-                alert("No video devices found.");
-                return [];
+                document.getElementById("error-message").textContent = "No camera found!";
+                return;
             }
 
             const cameraSelect = document.getElementById("camera-select");
@@ -144,30 +154,24 @@
 
             devices.forEach((device, index) => {
                 const option = document.createElement("option");
-                option.value = device.deviceId;
+                option.value = device.id;
                 option.textContent = device.label || `Camera ${index + 1}`;
                 cameraSelect.appendChild(option);
+                console.log(device)
             });
 
-            // Select the last used camera if available
-            if (selectedCameraId) {
-                cameraSelect.value = selectedCameraId;
-                onCameraChange({ target: { value: selectedCameraId } });  // เริ่มการสแกนเมื่อเลือกกล้อง
-            }
-        }
-
-        function onCameraChange(event) {
-            const cameraId = event.target.value;
-            selectedCameraId = cameraId;
-            localStorage.setItem("selectedCameraId", cameraId); // บันทึกกล้องที่เลือกใน localStorage
-            startScanner(cameraId); // เริ่มต้นการสแกนด้วยกล้องที่เลือก
+            // เริ่มต้นด้วยกล้องตัวแรกในรายการ
+            const defaultCameraId = devices[0].id;
+            
+            cameraSelect.value = defaultCameraId;
+            selectedCameraId = defaultCameraId;
+            startScanner(defaultCameraId);  // เริ่มการสแกนทันที
         }
 
         async function restartScanner() {
             document.getElementById("restart-btn").style.display = "none";
             document.getElementById("error-message").textContent = "";
-            const cameraId = document.getElementById("camera-select").value;
-            startScanner(cameraId);
+            startScanner(selectedCameraId);
         }
 
         async function sendManualId() {
@@ -179,8 +183,8 @@
             sendQrData(manualId);
         }
 
-        // เริ่มต้นการทำงาน
-        getAvailableCameras();  // ดึงกล้องทั้งหมดที่มี
+        // เริ่มต้นการทำงานเมื่อโหลดหน้า
+        window.onload = getAvailableCameras;  // ดึงกล้องทั้งหมดที่มี
     </script>
 </body>
 </html>
