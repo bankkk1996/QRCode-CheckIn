@@ -64,7 +64,6 @@
 
     <script>
         let html5QrcodeScanner;
-        let lastUsedCameraId = null; // เก็บ ID ของกล้องที่ใช้ล่าสุด
 
         const API_URL = "https://qrcodecheckin-523414082032.asia-southeast1.run.app"; // เปลี่ยนเป็น URL ของ Cloud Function
 
@@ -110,16 +109,24 @@
                     return;
                 }
 
-                // ใช้กล้องที่ใช้ล่าสุดหากมี
-                const cameraToUse = lastUsedCameraId || devices[0].id;
-                lastUsedCameraId = cameraToUse; // เก็บกล้องที่เลือก
+                // ค้นหากล้องหลัง (back camera)
+                const backCamera = devices.find(
+                    (device) => device.label.toLowerCase().includes("back") || device.facing === "environment"
+                );
 
+                if (!backCamera) {
+                    document.getElementById("error-message").textContent = "No back camera found!";
+                    return;
+                }
+
+                const cameraId = backCamera.id;
+
+                // เริ่มการสแกน QR Code ด้วยกล้องหลัง
                 html5QrcodeScanner = new Html5QrcodeScanner("reader", {
                     fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    rememberLastUsedCamera: true // จำกล้องที่ใช้ล่าสุด
+                    qrbox: { width: 250, height: 250 }
                 });
-                html5QrcodeScanner.render(onScanSuccess, onScanError);
+                html5QrcodeScanner.render(onScanSuccess, onScanError, cameraId);  // ใช้ cameraId ของกล้องหลัง
             } catch (error) {
                 document.getElementById("error-message").textContent = "Camera access error: " + error.message;
             }
@@ -144,4 +151,3 @@
     </script>
 </body>
 </html>
-    
