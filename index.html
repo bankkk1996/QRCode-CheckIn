@@ -124,13 +124,14 @@
                 // เรียกขอสิทธิ์เพื่อใช้กล้องทุกตัว
                 await navigator.mediaDevices.getUserMedia({ video: true }); // ไม่มีการระบุ deviceId เพื่อให้สามารถใช้กล้องใดๆ ก็ได้
 
-                html5QrcodeScanner = new Html5Qrcode("reader");
-                html5QrcodeScanner.start(
-                    cameraId, 
-                    { fps: 10, qrbox: { width: 300, height: 300 } }, 
-                    onScanSuccess, 
-                    onScanError
-                );
+                // เริ่มใช้งานกล้องที่เลือก
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: { width: 300, height: 300 },
+                    rememberLastUsedCamera: true
+                });
+
+                html5QrcodeScanner.render(onScanSuccess, onScanError); // เริ่มต้นการสแกน QR code
             } catch (error) {
                 document.getElementById("error-message").textContent = "Camera access error: " + error.message;
             }
@@ -157,7 +158,6 @@
                 option.value = device.id;
                 option.textContent = device.label || `Camera ${index + 1}`;
                 cameraSelect.appendChild(option);
-                console.log(device)
             });
 
             // เริ่มต้นด้วยกล้องตัวแรกในรายการ
