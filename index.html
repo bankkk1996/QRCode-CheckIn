@@ -1,64 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QR Code Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        #reader {
-            margin: 0 auto;
-            width: 100%;
-            max-width: 400px;
-            height: auto;
-        }
-        #loading {
-            display: none;
-            font-size: 18px;
-            color: blue;
-            margin-top: 10px;
-        }
-        #error-message {
-            color: red;
-            margin-top: 10px;
-        }
-        #restart-btn, #manual-submit {
-            display: none;
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #restart-btn:hover, #manual-submit:hover {
-            background-color: #45a049;
-        }
-        input {
-            padding: 10px;
-            width: 80%;
-            max-width: 300px;
-            margin-top: 10px;
-        }
-        #manual-submit {
-            display: inline-block;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      #reader {
+        margin: 0 auto;
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+      }
+      #loading {
+        display: none;
+        font-size: 18px;
+        color: blue;
+        margin-top: 10px;
+      }
+      #error-message {
+        color: red;
+        margin-top: 10px;
+      }
+      #restart-btn,
+      #manual-submit {
+        display: none;
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #restart-btn:hover,
+      #manual-submit:hover {
+        background-color: #45a049;
+      }
+      input {
+        padding: 10px;
+        width: 80%;
+        max-width: 300px;
+        margin-top: 10px;
+      }
+      #manual-submit {
+        display: inline-block;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Scan QR Code</h1>
 
     <div id="reader"></div>
 
     <h2>Enter Your ID (if QR scan fails)</h2>
-    <input type="text" id="manual-id" placeholder="Enter ID">
+    <input type="text" id="manual-id" placeholder="Enter ID" />
     <button id="manual-submit" onclick="sendManualId()">Submit</button>
 
     <div id="loading">Processing...</div>
@@ -70,83 +72,99 @@
     <button id="restart-btn" onclick="restartScanner()">Retry</button>
 
     <script>
-        let html5QrcodeScanner;
+      let html5QrcodeScanner;
 
-        const API_URL = "https://qrcodecheckin-523414082032.asia-southeast1.run.app"; // เปลี่ยนเป็น URL ของ Cloud Function
+      const API_URL =
+        "https://qrcodecheckin-523414082032.asia-southeast1.run.app"; // เปลี่ยนเป็น URL ของ Cloud Function
 
-        async function sendQrData(decodedText) {
-            document.getElementById("loading").style.display = "block";
-            document.getElementById("error-message").textContent = "";
+      async function sendQrData(decodedText) {
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("error-message").textContent = "";
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: decodedText })  
-                });
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: decodedText }),
+          });
 
-                if (!response.ok) throw new Error("Failed to fetch");
+          if (!response.ok) throw new Error("Failed to fetch");
 
-                const data = await response.json();
-                document.getElementById("response").innerText = data.message;
-            } catch (error) {
-                document.getElementById("error-message").textContent = "Error: " + error.message;
-            } finally {
-                document.getElementById("loading").style.display = "none";
-                document.getElementById("restart-btn").style.display = "inline-block";
-            }
+          const data = await response.json();
+          document.getElementById("response").innerText = data.message;
+        } catch (error) {
+          document.getElementById("error-message").textContent =
+            "Error: " + error.message;
+        } finally {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("restart-btn").style.display = "inline-block";
         }
+      }
 
-        function onScanSuccess(decodedText) {
-            console.log(`QR Code Scanned: ${decodedText}`);
-            html5QrcodeScanner.clear();
-            sendQrData(decodedText);
+      function onScanSuccess(decodedText) {
+        console.log(`QR Code Scanned: ${decodedText}`);
+        html5QrcodeScanner.clear();
+        sendQrData(decodedText);
+      }
+
+      function onScanError(errorMessage) {
+        console.warn("Scan error:", errorMessage);
+        document.getElementById(
+          "error-message"
+        ).textContent = `Error: ${errorMessage}`;
+      }
+
+      async function startScanner() {
+        try {
+          // ดึงรายการกล้องที่มีในอุปกรณ์
+          const devices = await Html5Qrcode.getCameras();
+
+          if (devices.length === 0) {
+            document.getElementById("error-message").textContent =
+              "No camera found!";
+            return;
+          }
+
+          // ค้นหากล้องหลัง (กล้องที่มีคำว่า 'back' หรือ 'environment')
+          const backCamera = devices.find(
+            (device) =>
+              device.label.toLowerCase().includes("back") ||
+              device.facing === "environment"
+          );
+
+          // เลือกกล้องหลัง (หรือถ้าไม่มีเลือกกล้องตัวแรก)
+          const cameraId = backCamera ? backCamera.id : devices[0].id;
+
+          // เริ่มการสแกนด้วยกล้องที่เลือก
+          html5QrcodeScanner = new Html5Qrcode("reader");
+          html5QrcodeScanner.start(
+            cameraId,
+            { fps: 10, qrbox: { width: 300, height: 300 } },
+            onScanSuccess,
+            onScanError
+          );
+        } catch (error) {
+          document.getElementById("error-message").textContent =
+            "Camera access error: " + error.message;
         }
+      }
 
-        function onScanError(errorMessage) {
-            console.warn("Scan error:", errorMessage);
-            document.getElementById("error-message").textContent = `Error: ${errorMessage}`;
-        }
-
-        async function startScanner() {
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices.length === 0) {
-                    document.getElementById("error-message").textContent = "No camera found!";
-                    return;
-                }
-
-                // เลือกกล้องหลังอัตโนมัติ
-                const backCameraId = devices.find(device => device.label.toLowerCase().includes("back"))?.id || devices[0].id;
-
-                html5QrcodeScanner = new Html5Qrcode("reader");
-                html5QrcodeScanner.start(
-                    backCameraId, 
-                    { fps: 10, qrbox: { width: 300, height: 300 } }, 
-                    onScanSuccess, 
-                    onScanError
-                );
-            } catch (error) {
-                document.getElementById("error-message").textContent = "Camera access error: " + error.message;
-            }
-        }
-
-        function restartScanner() {
-            document.getElementById("restart-btn").style.display = "none";
-            document.getElementById("error-message").textContent = "";
-            startScanner();
-        }
-
-        async function sendManualId() {
-            const manualId = document.getElementById("manual-id").value;
-            if (!manualId) {
-                alert("Please enter an ID.");
-                return;
-            }
-            sendQrData(manualId);
-        }
-
+      function restartScanner() {
+        document.getElementById("restart-btn").style.display = "none";
+        document.getElementById("error-message").textContent = "";
         startScanner();
+      }
+
+      async function sendManualId() {
+        const manualId = document.getElementById("manual-id").value;
+        if (!manualId) {
+          alert("Please enter an ID.");
+          return;
+        }
+        sendQrData(manualId);
+      }
+
+      startScanner();
     </script>
-</body>
+  </body>
 </html>
