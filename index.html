@@ -130,16 +130,10 @@
           // เรียกขอสิทธิ์เพื่อใช้กล้องทุกตัว
           await navigator.mediaDevices.getUserMedia({ video: true }); // ไม่มีการระบุ deviceId เพื่อให้สามารถใช้กล้องใดๆ ก็ได้
 
-          html5QrcodeScanner = new Html5Qrcode("reader", {
-            constraints: {
-              video: {
-                facingMode: "environment", // เลือกกล้องหลัง
-              },
-            },
-          });
+          html5QrcodeScanner = new Html5Qrcode("reader");
           html5QrcodeScanner.start(
             cameraId,
-            { fps: 10, qrbox: { width: 50, height: 50 } },
+            { fps: 10, qrbox: { width: 300, height: 300 } },
             onScanSuccess,
             onScanError
           );
