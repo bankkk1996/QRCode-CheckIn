@@ -72,7 +72,7 @@
 
       // ค้นหา QR Code ในฟิลด์ที่กำหนด
       for (let i = 0; i < sheetData.length; i++) {
-        alert(sheetData[i][fieldIndex] ,sheetData[i][fieldIndex] === decodedText)
+        alert(sheetData[i][fieldIndex], sheetData[i][fieldIndex] === decodedText)
         if (sheetData[i][fieldIndex] && sheetData[i][fieldIndex] === decodedText) {
           return i; // Return row index if match found
         }
@@ -82,22 +82,19 @@
     }
 
     async function updateGoogleSheet(rowIndex) {
-      // Replace with your actual Spreadsheet ID
       const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M';
-
-      // Replace with your API Key
       const apiKey = 'AIzaSyCiuseZQvz1rPiCVld5JuRA6f718-FtSYM';
 
-      const range = `ชีต1!z${rowIndex + 1}:z${rowIndex + 1}`; // Update column ผ
+      const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`; // Ensure the column is correct (case-sensitive)
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW&key=${apiKey}`;
 
       const body = {
-        values: [["Checked In"]], // Example value to update column ผ
+        values: [["Checked In"]],
       };
 
       try {
         const response = await fetch(url, {
-          method: "PATCH",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
@@ -105,14 +102,16 @@
         });
 
         if (response.ok) {
-          alert("Row updated successfully in column ผ.");
+          alert("Row updated successfully in column Z.");
         } else {
-          alert("Error updating row:", response.text());
+          const errorResponse = await response.json();
+          alert("Error updating row:", errorResponse.error.message);
         }
       } catch (error) {
         alert("Error updating Google Sheets:", error);
       }
     }
+
   </script>
 </head>
 
