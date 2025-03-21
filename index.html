@@ -88,7 +88,7 @@
       // Replace with your API Key
       const apiKey = 'AIzaSyCiuseZQvz1rPiCVld5JuRA6f718-FtSYM';
 
-      const range = `ชีต1!ผ${rowIndex + 1}:z${rowIndex + 1}`; // Update column ผ
+      const range = `ชีต1!z${rowIndex + 1}:z${rowIndex + 1}`; // Update column ผ
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW&key=${apiKey}`;
 
       const body = {
