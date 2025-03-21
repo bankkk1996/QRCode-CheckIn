@@ -107,10 +107,10 @@
         if (response.ok) {
           alert("Row updated successfully in column ผ.");
         } else {
-          console.error("Error updating row:", await response.text());
+          alert("Error updating row:", await response.text());
         }
       } catch (error) {
-        console.error("Error updating Google Sheets:", error);
+        alert("Error updating Google Sheets:", error);
       }
     }
   </script>
