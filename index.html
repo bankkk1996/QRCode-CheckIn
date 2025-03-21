@@ -97,7 +97,7 @@
 
       try {
         const response = await fetch(url, {
-          method: "PUT",
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
@@ -107,7 +107,7 @@
         if (response.ok) {
           alert("Row updated successfully in column ผ.");
         } else {
-          alert("Error updating row:", await response.text());
+          alert("Error updating row:", response.text());
         }
       } catch (error) {
         alert("Error updating Google Sheets:", error);
