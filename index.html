@@ -72,6 +72,7 @@
 
       // ค้นหา QR Code ในฟิลด์ที่กำหนด
       for (let i = 0; i < sheetData.length; i++) {
+        alert(sheetData[i][fieldIndex] ,sheetData[i][fieldIndex] === decodedText)
         if (sheetData[i][fieldIndex] && sheetData[i][fieldIndex] === decodedText) {
           return i; // Return row index if match found
         }
