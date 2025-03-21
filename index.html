@@ -67,8 +67,8 @@
         return -1;
       }
 
-      // กำหนดฟิลด์ (คอลัมน์) ที่ต้องการค้นหา เช่น คอลัมน์ที่ 2 (index 1)
-      const fieldIndex = 13; // เปลี่ยนเป็นคอลัมน์ที่ต้องการ
+      // กำหนดฟิลด์ (คอลัมน์) ที่ต้องการค้นหา เช่น คอลัมน์ M (index 12)
+      const fieldIndex = 12; // เปลี่ยนเป็นคอลัมน์ที่ต้องการ
 
       // ค้นหา QR Code ในฟิลด์ที่กำหนด
       for (let i = 0; i < sheetData.length; i++) {
@@ -87,11 +87,11 @@
       // Replace with your API Key
       const apiKey = 'AIzaSyCiuseZQvz1rPiCVld5JuRA6f718-FtSYM';
 
-      const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`; // Update column Z
+      const range = `ชีต1!ผ${rowIndex + 1}:ผ${rowIndex + 1}`; // Update column ผ
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW&key=${apiKey}`;
 
       const body = {
-        values: [["Checked In"]], // Example value to update column Z
+        values: [["Checked In"]], // Example value to update column ผ
       };
 
       try {
@@ -104,7 +104,7 @@
         });
 
         if (response.ok) {
-          alert("Row updated successfully.");
+          alert("Row updated successfully in column ผ.");
         } else {
           console.error("Error updating row:", await response.text());
         }
