@@ -94,7 +94,7 @@
 
       try {
         const response = await fetch(url, {
-          method: "PUT",
+          method: "PUT", // Change the method to PUT
           headers: {
             "Content-Type": "application/json",
           },
@@ -104,13 +104,18 @@
         if (response.ok) {
           alert("Row updated successfully in column Z.");
         } else {
+          // Fetch and log the error message from the response body
           const errorResponse = await response.json();
-          alert("Error updating row:", errorResponse.error.message);
+          console.error("API error response:", errorResponse); // Logs the detailed error response
+          alert(`Error updating row: ${errorResponse.error.message}`);
         }
       } catch (error) {
-        alert("Error updating Google Sheets:", error);
+        // Log the error if the fetch fails entirely
+        console.error("Error during fetch:", error);
+        alert("Error updating Google Sheets: " + error.message);
       }
     }
+
 
   </script>
 </head>
