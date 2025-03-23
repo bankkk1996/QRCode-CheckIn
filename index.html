@@ -115,7 +115,7 @@
 
       function updateSheet(rowIndex, customValue = "Check-in") {
         var row = rowIndex + 2;
-        var column = 26;
+        var column = 9;
         var url = "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec";
 
         fetch(url, {
@@ -216,7 +216,7 @@
       <div id="scanner-section">
         <video id="scanner"></video>
         <p id="result">Waiting for scan...</p>
-        <button id="admin-button">Check-in for Admin</button>
+        
       </div>
       <div id="manual-section">
         <div class="input-container">
@@ -224,13 +224,8 @@
           <button id="manual-search">ค้นหา</button>
         </div>
       </div>
-      <div id="admin-section">
-        <div class="input-container">
-          <input type="text" id="admin-input" placeholder="กรอกข้อมูลที่ต้องการบันทึก" />
-          <button id="admin-submit">บันทึกข้อมูล</button>
-        </div>
-      </div>
       <div id="result-info"></div> <!-- ข้อมูลบางส่วนจากผลการสแกน -->
+      <button id="admin-button">Check-in for Admin</button>
     </div>
   </body>
 </html>
