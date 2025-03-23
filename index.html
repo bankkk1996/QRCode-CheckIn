@@ -8,17 +8,17 @@
       import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
       let sheetData = [];
 
-      // Fetch data from Google Sheets
+      // ✅ โหลดข้อมูลจาก Google Sheets
       async function fetchGoogleSheetData() {
-        const spreadsheetId = "1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M"; // ใส่ Spreadsheet ID
-        const sheetName = "ชีต1"; // ใส่ชื่อชีตที่ต้องการดึงข้อมูล
+        const spreadsheetId = "1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M";
+        const sheetName = "ชีต1";
         const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
         try {
           const response = await fetch(url);
           let text = await response.text();
 
-          // ลบ prefix ที่ Google ใส่มา
+          // ✅ ลบ Prefix ที่ Google ใส่มา
           text = text
             .replace("/*O_o*/", "")
             .replace("google.visualization.Query.setResponse(", "")
@@ -29,64 +29,47 @@
             row.c.map((cell) => (cell ? cell.v : ""))
           );
 
-          console.log("Google Sheets Data Loaded:", rows);
-          return rows; // คืนค่าข้อมูลที่ดึงมา
+          console.log("✅ Google Sheets Data Loaded:", rows);
+          return rows;
         } catch (error) {
-          console.error("Error fetching Google Sheets data:", error);
-          return []; // ถ้าล้มเหลว ให้คืนค่าเป็น Array ว่าง
+          console.error("❌ Error fetching Google Sheets data:", error);
+          return [];
         }
       }
 
-      window.onload = () => {
-        const video = document.getElementById("scanner");
-        const resultElement = document.getElementById("result");
-        const adminButton = document.getElementById("admin-button");
-
-        const scanner = new QrScanner(video, (result) => {
-          checkQRCode(result).then((rowIndex) => {
-            if (rowIndex !== -1) {
-              resultElement.textContent = `Match found: ${result}`;
-              adminButton.style.display = "block";
-              adminButton.onclick = () => updateSheet(rowIndex);
-            } else {
-              resultElement.textContent = `No match found for: ${result}`;
-              adminButton.style.display = "none";
-            }
-          });
-        });
-        sheetData = await fetchGoogleSheetData();
-        scanner.start();
-      };
-
+      // ✅ ตรวจสอบ QR Code ว่ามีอยู่ใน Google Sheets หรือไม่
       async function checkQRCode(decodedText) {
         if (!sheetData || sheetData.length === 0) {
+          console.warn("⚠ No data loaded from Google Sheets.");
           return -1;
         }
 
-        const fieldIndex = 12; // Column index for QR code match
+        const fieldIndex = 12; // คอลัมน์ที่เก็บ QR Code
         for (let i = 0; i < sheetData.length; i++) {
-          alert(
-            sheetData[i][fieldIndex],
-            sheetData[i][fieldIndex] === decodedText
-          );
-          if (
-            sheetData[i][fieldIndex] &&
-            sheetData[i][fieldIndex] === decodedText
-          ) {
-            return i; // Return row index if match found
+          let cellValue = sheetData[i][fieldIndex]
+            ? sheetData[i][fieldIndex].toString().trim()
+            : "";
+
+          console.log(`🔍 Checking row ${i}: ${cellValue} vs ${decodedText}`);
+
+          if (cellValue === decodedText) {
+            return i; // ✅ เจอข้อมูลที่ตรงกัน
           }
         }
 
-        return -1; // Return -1 if no match found
+        return -1; // ❌ ไม่พบข้อมูล
       }
 
+      // ✅ อัปเดตข้อมูลใน Google Sheets
       function updateSheet(rowIndex) {
-        var row = rowIndex;
+        var row = rowIndex + 1;
         var column = 23;
         var value = "Check-in";
 
         var url =
-          "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec"; // Replace with your actual Apps Script URL
+          "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec";
+
+        console.log(`📌 Updating row: ${row}, column: ${column}, value: ${value}`);
 
         fetch(url, {
           method: "POST",
@@ -94,39 +77,36 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ row: row, column: column, value: value }),
         })
-          .then((response) => {
-            alert("Updated successfully!");
+          .then(() => {
+            alert("✅ Updated successfully!");
           })
           .catch((error) => {
-            console.error("Error:", error);
+            console.error("❌ Error:", error);
           });
       }
 
-      // async function updateGoogleSheet(rowIndex) {
-      //   const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M';
-      //   const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`;
-      //   const body = { values: [["Checked In"]] };
+      // ✅ โหลดข้อมูลและเริ่มทำงานเมื่อหน้าเว็บโหลดเสร็จ
+      window.onload = async () => {
+        const video = document.getElementById("scanner");
+        const resultElement = document.getElementById("result");
+        const adminButton = document.getElementById("admin-button");
 
-      //   try {
-      //     const response = await gapi.client.sheets.spreadsheets.values.update({
-      //       spreadsheetId: spreadsheetId,
-      //       range: range,
-      //       valueInputOption: "RAW",
-      //       resource: body,
-      //     });
+        const scanner = new QrScanner(video, async (result) => {
+          const rowIndex = await checkQRCode(result);
+          if (rowIndex !== -1) {
+            resultElement.textContent = `✅ Match found: ${result}`;
+            adminButton.style.display = "block";
+            adminButton.onclick = () => updateSheet(rowIndex);
+          } else {
+            resultElement.textContent = `❌ No match found for: ${result}`;
+            adminButton.style.display = "none";
+          }
+        });
 
-      //     if (response.status === 200) {
-      //       alert("Row updated successfully in column Z.");
-      //     } else {
-      //       alert("Error updating Google Sheets.");
-      //     }
-      //   } catch (error) {
-      //     console.error("Error updating Google Sheets:", error);
-      //     alert("Error updating Google Sheets: " + error.message);
-      //   }
-      // }
+        sheetData = await fetchGoogleSheetData();
+        scanner.start();
+      };
     </script>
-    <script src="https://apis.google.com/js/api.js"></script>
   </head>
 
   <body>
