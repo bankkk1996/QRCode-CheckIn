@@ -33,6 +33,7 @@
           return rows; // คืนค่าข้อมูลที่ดึงมา
         } catch (error) {
           console.error("Error fetching Google Sheets data:", error);
+          return []; // ถ้าล้มเหลว ให้คืนค่าเป็น Array ว่าง
         }
       }
 
@@ -53,7 +54,7 @@
             }
           });
         });
-        sheetData = fetchGoogleSheetData();
+        sheetData = await fetchGoogleSheetData();
         scanner.start();
       };
 
