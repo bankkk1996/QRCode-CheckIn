@@ -9,33 +9,6 @@
     import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
     let sheetData = [];
 
-    // Add Google API client library
-    function loadAuth() {
-      gapi.load('client:auth2', initAuth);
-    }
-
-    // Initialize OAuth 2.0 client and Google Sheets API
-    async function initAuth() {
-      await gapi.auth2.init({
-        client_id: '690988430312-jvv504kjlur1matifdoo6nb4kq6ordgn.apps.googleusercontent.com',  // Replace with your Client ID
-      });
-
-      const authInstance = gapi.auth2.getAuthInstance();
-
-      // Check if the user is signed in
-      if (authInstance.isSignedIn.get()) {
-        // Proceed if already signed in
-        console.log("User is signed in.");
-        fetchGoogleSheetData();
-      } else {
-        // Trigger the sign-in flow if not signed in
-        authInstance.signIn().then(() => {
-          console.log("User signed in.");
-          fetchGoogleSheetData();
-        });
-      }
-    }
-
     // Fetch data from Google Sheets
     async function fetchGoogleSheetData() {
       const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M'; // Spreadsheet ID
@@ -65,7 +38,7 @@
           if (rowIndex !== -1) {
             resultElement.textContent = `Match found: ${result}`;
             adminButton.style.display = "block";
-            adminButton.onclick = () => updateGoogleSheet(rowIndex);
+            adminButton.onclick = () => updateSheet(rowIndex);
           } else {
             resultElement.textContent = `No match found for: ${result}`;
             adminButton.style.display = "none";
@@ -75,7 +48,6 @@
 
       scanner.start();
 
-      loadAuth(); // Initialize Google Auth
     };
 
     async function checkQRCode(decodedText) {
@@ -93,29 +65,48 @@
       return -1; // Return -1 if no match found
     }
 
-    async function updateGoogleSheet(rowIndex) {
-      const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M';
-      const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`;
-      const body = { values: [["Checked In"]] };
+    function updateSheet(rowIndex) {
+            var row = rowIndex;
+            var column = 23;
+            var value = "Check-in";
 
-      try {
-        const response = await gapi.client.sheets.spreadsheets.values.update({
-          spreadsheetId: spreadsheetId,
-          range: range,
-          valueInputOption: "RAW",
-          resource: body,
-        });
+            var url = "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec";  // Replace with your actual Apps Script URL
 
-        if (response.status === 200) {
-          alert("Row updated successfully in column Z.");
-        } else {
-          alert("Error updating Google Sheets.");
+            fetch(url, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ row: row, column: column, value: value })
+            }).then(response => {
+                alert("Updated successfully!");
+            }).catch(error => {
+                console.error("Error:", error);
+            });
         }
-      } catch (error) {
-        console.error("Error updating Google Sheets:", error);
-        alert("Error updating Google Sheets: " + error.message);
-      }
-    }
+
+    // async function updateGoogleSheet(rowIndex) {
+    //   const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M';
+    //   const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`;
+    //   const body = { values: [["Checked In"]] };
+
+    //   try {
+    //     const response = await gapi.client.sheets.spreadsheets.values.update({
+    //       spreadsheetId: spreadsheetId,
+    //       range: range,
+    //       valueInputOption: "RAW",
+    //       resource: body,
+    //     });
+
+    //     if (response.status === 200) {
+    //       alert("Row updated successfully in column Z.");
+    //     } else {
+    //       alert("Error updating Google Sheets.");
+    //     }
+    //   } catch (error) {
+    //     console.error("Error updating Google Sheets:", error);
+    //     alert("Error updating Google Sheets: " + error.message);
+    //   }
+    // }
   </script>
   <script src="https://apis.google.com/js/api.js"></script>
 </head>
