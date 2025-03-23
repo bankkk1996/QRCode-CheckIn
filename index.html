@@ -4,11 +4,78 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QR Code Scanner</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background-color: #f4f4f4;
+        padding: 20px;
+      }
+      h1 {
+        color: #333;
+      }
+      #scanner {
+        width: 100%;
+        max-width: 500px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+      }
+      #result {
+        font-size: 18px;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin-top: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #218838;
+      }
+      #admin-button {
+        background-color: #007bff;
+        display: none;
+      }
+      #admin-button:hover {
+        background-color: #0056b3;
+      }
+      .input-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      input {
+        padding: 10px;
+        font-size: 16px;
+        width: 250px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      #manual-section,
+      #admin-section {
+        display: none;
+        margin-top: 20px;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: auto;
+      }
+    </style>
     <script type="module">
       import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
       let sheetData = [];
 
-      // ✅ โหลดข้อมูลจาก Google Sheets
       async function fetchGoogleSheetData() {
         const spreadsheetId = "1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M";
         const sheetName = "ชีต1";
@@ -17,104 +84,133 @@
         try {
           const response = await fetch(url);
           let text = await response.text();
-
-          // ✅ ลบ Prefix ที่ Google ใส่มา
-          text = text
-            .replace("/*O_o*/", "")
-            .replace("google.visualization.Query.setResponse(", "")
-            .slice(0, -2);
-
+          text = text.replace("/*O_o*/", "").replace("google.visualization.Query.setResponse(", "").slice(0, -2);
           const jsonData = JSON.parse(text);
-          const rows = jsonData.table.rows.map((row) =>
-            row.c.map((cell) => (cell ? cell.v : ""))
-          );
-
-          console.log("✅ Google Sheets Data Loaded:", rows);
-          return rows;
+          return jsonData.table.rows.map((row) => row.c.map((cell) => (cell ? cell.v : "")));
         } catch (error) {
           console.error("❌ Error fetching Google Sheets data:", error);
           return [];
         }
       }
 
-      // ✅ ตรวจสอบ QR Code ว่ามีอยู่ใน Google Sheets หรือไม่
       async function checkQRCode(decodedText) {
-        if (!sheetData || sheetData.length === 0) {
-          console.warn("⚠ No data loaded from Google Sheets.");
-          return -1;
-        }
-
-        const fieldIndex = 12; // คอลัมน์ที่เก็บ QR Code
+        if (!sheetData || sheetData.length === 0) return -1;
+        const fieldIndex = 12;
         for (let i = 0; i < sheetData.length; i++) {
-          let cellValue = sheetData[i][fieldIndex]
-            ? sheetData[i][fieldIndex].toString().trim()
-            : "";
-
-          console.log(`🔍 Checking row ${i}: ${cellValue} vs ${decodedText}`);
-
-          if (cellValue === decodedText) {
-            return i; // ✅ เจอข้อมูลที่ตรงกัน
+          if (sheetData[i][fieldIndex] && sheetData[i][fieldIndex].toString().trim() === decodedText) {
+            return i;
           }
         }
-
-        return -1; // ❌ ไม่พบข้อมูล
+        return -1;
       }
 
-      // ✅ อัปเดตข้อมูลใน Google Sheets
-      function updateSheet(rowIndex) {
+      function updateSheet(rowIndex, customValue = "Check-in") {
         var row = rowIndex + 2;
         var column = 26;
-        var value = "Check-in";
-
-        var url =
-          "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec";
-
-        console.log(`📌 Updating row: ${row}, column: ${column}, value: ${value}`);
+        var url = "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec";
 
         fetch(url, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ row: row, column: column, value: value }),
+          body: JSON.stringify({ row: row, column: column, value: customValue }),
         })
           .then(() => {
             alert("✅ Updated successfully!");
+            resetScanner();
           })
-          .catch((error) => {
-            console.error("❌ Error:", error);
-          });
+          .catch((error) => console.error("❌ Error:", error));
       }
 
-      // ✅ โหลดข้อมูลและเริ่มทำงานเมื่อหน้าเว็บโหลดเสร็จ
+      function resetScanner() {
+        document.getElementById("result").textContent = "Waiting for scan...";
+        document.getElementById("admin-section").style.display = "none";
+        document.getElementById("admin-button").style.display = "none";
+        document.getElementById("admin-input").value = "";
+      }
+
       window.onload = async () => {
         const video = document.getElementById("scanner");
         const resultElement = document.getElementById("result");
         const adminButton = document.getElementById("admin-button");
+        const adminSection = document.getElementById("admin-section");
+        const adminInput = document.getElementById("admin-input");
+        const adminSubmit = document.getElementById("admin-submit");
+        const manualInput = document.getElementById("manual-input");
+        const manualSearch = document.getElementById("manual-search");
+        const toggleMode = document.getElementById("toggle-mode");
+
+        let scannerEnabled = true;
 
         const scanner = new QrScanner(video, async (result) => {
-          const rowIndex = await checkQRCode(result);
-          if (rowIndex !== -1) {
-            resultElement.textContent = `✅ Match found: ${result}`;
-            adminButton.style.display = "block";
-            adminButton.onclick = () => updateSheet(rowIndex);
-          } else {
-            resultElement.textContent = `❌ No match found for: ${result}`;
-            adminButton.style.display = "none";
-          }
+          if (!scannerEnabled) return;
+          processQRCode(result);
         });
 
         sheetData = await fetchGoogleSheetData();
         scanner.start();
+
+        toggleMode.onclick = () => {
+          scannerEnabled = !scannerEnabled;
+          video.style.display = scannerEnabled ? "block" : "none";
+          resultElement.style.display = scannerEnabled ? "block" : "none";
+          document.getElementById("manual-section").style.display = scannerEnabled ? "none" : "block";
+        };
+
+        manualSearch.onclick = async () => {
+          const inputValue = manualInput.value.trim();
+          if (inputValue) {
+            processQRCode(inputValue);
+          } else {
+            alert("⚠ กรุณากรอกข้อมูลก่อนค้นหา");
+          }
+        };
+
+        adminSubmit.onclick = () => {
+          const customValue = adminInput.value.trim();
+          if (customValue) {
+            updateSheet(sheetData.length, customValue);
+          } else {
+            alert("⚠ กรุณากรอกข้อมูลก่อนบันทึก");
+          }
+        };
+
+        async function processQRCode(input) {
+          const rowIndex = await checkQRCode(input);
+          if (rowIndex !== -1) {
+            resultElement.textContent = `✅ Match found: ${input}`;
+            adminButton.style.display = "block";
+            adminButton.onclick = () => updateSheet(rowIndex);
+          } else {
+            resultElement.textContent = `❌ No match found for: ${input}`;
+            adminSection.style.display = "block";
+          }
+        }
       };
     </script>
   </head>
 
   <body>
-    <h1>QR Code Scanner</h1>
-    <video id="scanner" style="width: 100%; max-width: 500px"></video>
-    <p id="result">Waiting for scan...</p>
-    <button id="admin-button" style="display: none; margin-top: 20px">
-      Check-in for Admin
-    </button>
+    <div class="container">
+      <h1>QR Code Scanner</h1>
+      <button id="toggle-mode">🔄 สลับโหมด (สแกน / กรอกเอง)</button>
+      <div id="scanner-section">
+        <video id="scanner"></video>
+        <p id="result">Waiting for scan...</p>
+        <button id="admin-button">Check-in for Admin</button>
+      </div>
+      <div id="manual-section">
+        <div class="input-container">
+          <input type="text" id="manual-input" placeholder="กรอกข้อมูลที่ต้องการค้นหา" />
+          <button id="manual-search">ค้นหา</button>
+        </div>
+      </div>
+      <div id="admin-section">
+        <div class="input-container">
+          <input type="text" id="admin-input" placeholder="กรอกข้อมูลที่ต้องการบันทึก" />
+          <button id="admin-submit">บันทึกข้อมูล</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
