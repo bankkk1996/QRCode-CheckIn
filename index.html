@@ -1,122 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Code Scanner</title>
+    <script type="module">
+      import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
+      let sheetData = [];
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QR Code Scanner</title>
-  <script type="module">
-    import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
-    let sheetData = [];
+      // Fetch data from Google Sheets
+      async function fetchGoogleSheetData() {
+        const spreadsheetId = "1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M"; // ใส่ Spreadsheet ID
+        const sheetName = "ชีต1"; // ใส่ชื่อชีตที่ต้องการดึงข้อมูล
+        const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
-    // Fetch data from Google Sheets
-    async function fetchGoogleSheetData() {
-      const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M'; // Spreadsheet ID
-      const range = 'ชีต1!A:Z'; // Sheet name and range
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`;
+        try {
+          const response = await fetch(url);
+          let text = await response.text();
 
-      try {
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: spreadsheetId,
-          range: range,
-        });
+          // ลบ prefix ที่ Google ใส่มา
+          text = text
+            .replace("/*O_o*/", "")
+            .replace("google.visualization.Query.setResponse(", "")
+            .slice(0, -2);
 
-        sheetData = response.result.values;
-        console.log("Google Sheets Data Loaded:", sheetData);
-      } catch (error) {
-        console.error("Error fetching Google Sheets data:", error);
+          const jsonData = JSON.parse(text);
+          const rows = jsonData.table.rows.map((row) =>
+            row.c.map((cell) => (cell ? cell.v : ""))
+          );
+
+          console.log("Google Sheets Data Loaded:", rows);
+          return rows; // คืนค่าข้อมูลที่ดึงมา
+        } catch (error) {
+          console.error("Error fetching Google Sheets data:", error);
+        }
       }
-    }
 
-    window.onload = () => {
-      const video = document.getElementById("scanner");
-      const resultElement = document.getElementById("result");
-      const adminButton = document.getElementById("admin-button");
+      window.onload = () => {
+        const video = document.getElementById("scanner");
+        const resultElement = document.getElementById("result");
+        const adminButton = document.getElementById("admin-button");
 
-      const scanner = new QrScanner(video, (result) => {
-        checkQRCode(result).then((rowIndex) => {
-          if (rowIndex !== -1) {
-            resultElement.textContent = `Match found: ${result}`;
-            adminButton.style.display = "block";
-            adminButton.onclick = () => updateSheet(rowIndex);
-          } else {
-            resultElement.textContent = `No match found for: ${result}`;
-            adminButton.style.display = "none";
+        const scanner = new QrScanner(video, (result) => {
+          checkQRCode(result).then((rowIndex) => {
+            if (rowIndex !== -1) {
+              resultElement.textContent = `Match found: ${result}`;
+              adminButton.style.display = "block";
+              adminButton.onclick = () => updateSheet(rowIndex);
+            } else {
+              resultElement.textContent = `No match found for: ${result}`;
+              adminButton.style.display = "none";
+            }
+          });
+        });
+        fetchGoogleSheetData();
+        scanner.start();
+      };
+
+      async function checkQRCode(decodedText) {
+        if (!sheetData || sheetData.length === 0) {
+          return -1;
+        }
+
+        const fieldIndex = 12; // Column index for QR code match
+        for (let i = 0; i < sheetData.length; i++) {
+          alert(
+            sheetData[i][fieldIndex],
+            sheetData[i][fieldIndex] === decodedText
+          );
+          if (
+            sheetData[i][fieldIndex] &&
+            sheetData[i][fieldIndex] === decodedText
+          ) {
+            return i; // Return row index if match found
           }
-        });
-      });
-
-      scanner.start();
-
-    };
-
-    async function checkQRCode(decodedText) {
-      if (!sheetData || sheetData.length === 0) {
-        return -1;
-      }
-
-      const fieldIndex = 12; // Column index for QR code match
-      for (let i = 0; i < sheetData.length; i++) {
-        alert(sheetData[i][fieldIndex] , sheetData[i][fieldIndex] === decodedText)
-        if (sheetData[i][fieldIndex] && sheetData[i][fieldIndex] === decodedText) {
-          return i; // Return row index if match found
-        }
-      }
-
-      return -1; // Return -1 if no match found
-    }
-
-    function updateSheet(rowIndex) {
-            var row = rowIndex;
-            var column = 23;
-            var value = "Check-in";
-
-            var url = "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec";  // Replace with your actual Apps Script URL
-
-            fetch(url, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ row: row, column: column, value: value })
-            }).then(response => {
-                alert("Updated successfully!");
-            }).catch(error => {
-                console.error("Error:", error);
-            });
         }
 
-    // async function updateGoogleSheet(rowIndex) {
-    //   const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M';
-    //   const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`;
-    //   const body = { values: [["Checked In"]] };
+        return -1; // Return -1 if no match found
+      }
 
-    //   try {
-    //     const response = await gapi.client.sheets.spreadsheets.values.update({
-    //       spreadsheetId: spreadsheetId,
-    //       range: range,
-    //       valueInputOption: "RAW",
-    //       resource: body,
-    //     });
+      function updateSheet(rowIndex) {
+        var row = rowIndex;
+        var column = 23;
+        var value = "Check-in";
 
-    //     if (response.status === 200) {
-    //       alert("Row updated successfully in column Z.");
-    //     } else {
-    //       alert("Error updating Google Sheets.");
-    //     }
-    //   } catch (error) {
-    //     console.error("Error updating Google Sheets:", error);
-    //     alert("Error updating Google Sheets: " + error.message);
-    //   }
-    // }
-  </script>
-  <script src="https://apis.google.com/js/api.js"></script>
-</head>
+        var url =
+          "https://script.google.com/macros/s/AKfycbzg97y7vRPBvu3x5jsUjV1EgMkxGOEJa9Aqk3DNUWlifVfc60cJyJ7UIyf5ct7e-2lwPA/exec"; // Replace with your actual Apps Script URL
 
-<body>
-  <h1>QR Code Scanner</h1>
-  <video id="scanner" style="width: 100%; max-width: 500px"></video>
-  <p id="result">Waiting for scan...</p>
-  <button id="admin-button" style="display: none; margin-top: 20px;">Check-in for Admin</button>
-</body>
+        fetch(url, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ row: row, column: column, value: value }),
+        })
+          .then((response) => {
+            alert("Updated successfully!");
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
 
+      // async function updateGoogleSheet(rowIndex) {
+      //   const spreadsheetId = '1B_WgsRqY5dZ0LLOly-6CZP9qpmKw7Q9AQuOg9hVi-5M';
+      //   const range = `ชีต1!Z${rowIndex + 1}:Z${rowIndex + 1}`;
+      //   const body = { values: [["Checked In"]] };
+
+      //   try {
+      //     const response = await gapi.client.sheets.spreadsheets.values.update({
+      //       spreadsheetId: spreadsheetId,
+      //       range: range,
+      //       valueInputOption: "RAW",
+      //       resource: body,
+      //     });
+
+      //     if (response.status === 200) {
+      //       alert("Row updated successfully in column Z.");
+      //     } else {
+      //       alert("Error updating Google Sheets.");
+      //     }
+      //   } catch (error) {
+      //     console.error("Error updating Google Sheets:", error);
+      //     alert("Error updating Google Sheets: " + error.message);
+      //   }
+      // }
+    </script>
+    <script src="https://apis.google.com/js/api.js"></script>
+  </head>
+
+  <body>
+    <h1>QR Code Scanner</h1>
+    <video id="scanner" style="width: 100%; max-width: 500px"></video>
+    <p id="result">Waiting for scan...</p>
+    <button id="admin-button" style="display: none; margin-top: 20px">
+      Check-in for Admin
+    </button>
+  </body>
 </html>
