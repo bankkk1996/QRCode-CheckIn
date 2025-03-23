@@ -71,6 +71,12 @@
         max-width: 600px;
         margin: auto;
       }
+      #result-info {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #555;
+        text-align: left;
+      }
     </style>
     <script type="module">
       import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
@@ -93,12 +99,15 @@
         }
       }
 
+      // ปรับปรุงฟังก์ชัน checkQRCode เพื่อค้นหาทุกคอลัมน์
       async function checkQRCode(decodedText) {
         if (!sheetData || sheetData.length === 0) return -1;
-        const fieldIndex = 12;
+
         for (let i = 0; i < sheetData.length; i++) {
-          if (sheetData[i][fieldIndex] && sheetData[i][fieldIndex].toString().trim() === decodedText) {
-            return i;
+          for (let j = 0; j < sheetData[i].length; j++) {
+            if (sheetData[i][j] && sheetData[i][j].toString().trim() === decodedText) {
+              return i;
+            }
           }
         }
         return -1;
@@ -127,6 +136,7 @@
         document.getElementById("admin-section").style.display = "none";
         document.getElementById("admin-button").style.display = "none";
         document.getElementById("admin-input").value = "";
+        document.getElementById("result-info").innerHTML = ""; // Clear result info
       }
 
       window.onload = async () => {
@@ -181,6 +191,15 @@
             resultElement.textContent = `✅ Match found: ${input}`;
             adminButton.style.display = "block";
             adminButton.onclick = () => updateSheet(rowIndex);
+
+            // Show partial data after scan or search
+            const rowData = sheetData[rowIndex];
+            const partialData = `
+              <strong>Name:</strong> ${rowData[1] || "N/A"}  ${rowData[2] || "N/A"} <br>
+              <strong>E-mail:</strong> ${rowData[3] || "N/A"} <br>
+              <strong>หน่วยงาน:</strong> ${rowData[5] || "N/A"}
+            `;
+            document.getElementById("result-info").innerHTML = partialData;
           } else {
             resultElement.textContent = `❌ No match found for: ${input}`;
             adminSection.style.display = "block";
@@ -211,6 +230,7 @@
           <button id="admin-submit">บันทึกข้อมูล</button>
         </div>
       </div>
+      <div id="result-info"></div> <!-- ข้อมูลบางส่วนจากผลการสแกน -->
     </div>
   </body>
 </html>
